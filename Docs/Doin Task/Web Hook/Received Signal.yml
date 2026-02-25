@@ -1,0 +1,25 @@
+info:
+  name: Received Signal
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/broker/webhook/receive-signal/"
+  headers:
+    - name: X-API-KEY
+      value: adjfjsdlkfjlkasdjfljsdlfdkfsdkjfksdj12345@
+  body:
+    type: text
+    data: |
+      BUY EURUSD [@1.0860 - Optional]
+
+      SL 1.0850
+      TP 1.0890
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

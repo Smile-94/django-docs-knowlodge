@@ -1,0 +1,26 @@
+info:
+  name: Refresh Token View
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/user/refresh/"
+  headers:
+    - name: X-Device-ID
+      value: "{{deviceId}}"
+    - name: X-Browser-Fingerprint
+      value: "{{browserFingerPrint}}"
+  body:
+    type: json
+    data: |-
+      {
+        "refresh_token": "YO2HnRFoGxVOR6ewNcl4h9n7378ggOfPqLKp5Nhm-qC-291OEYPBtR7Iu8AkBblUBNXNaNfpAtSQAXIS5kwCgA.99c65d3807192b0f4392b4de4e03adfc5acc6bb36e2e469052b82899470ea468"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,117 @@
+[tool.poetry]
+name = "django template"
+version = "0.0.0.1"
+description = "This is a comprehensive django template"
+authors = ["Sazzad Hossen <mshossen75@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "^6.0.1"
+pydantic = "^2.12.5"
+pydantic-settings = "^2.12.0"
+django-environ = "^0.12.0"
+django-debug-toolbar = "^6.1.0"
+whitenoise = "^6.11.0"
+djangorestframework = "^3.16.1"
+django-filter = "^25.2"
+redis = "^7.1.0"
+django-redis = "^6.0.0"
+drf-spectacular = "^0.29.0"
+drf-spectacular-sidecar = "^2026.1.1"
+pytz = "^2025.2"
+celery = "^5.6.2"
+django-admin-rangefilter = "^0.13.5"
+cryptography = "^46.0.5"
+channels-redis = "^4.3.0"
+gunicorn = "^25.1.0"
+uvicorn = {extras = ["standard"], version = "^0.41.0"}
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+# ============================================================================
+# Ruff  Fast Python linter & formatter
+# Replaces: flake8, isort, pyupgrade, bugbear, django rules
+# ============================================================================
+
+[tool.ruff]
+# Target Python version
+target-version = "py312"
+
+# Line length (Black-compatible)
+line-length = 130
+
+# Display auto-fixable rules
+show-fixes = true
+
+# Paths Ruff should ignore completely
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "migrations",
+    "static",
+    "media",
+    "node_modules",
+]
+
+# ----------------------------------------------------------------------------
+# Lint rules
+# ----------------------------------------------------------------------------
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (real bugs)
+    "I",    # isort (imports)
+    "UP",   # pyupgrade (modern Python)
+    "B",    # flake8-bugbear (bug patterns)
+    "DJ",   # flake8-django (Django best practices)
+]
+
+# Django-friendly ignores
+ignore = [
+    "DJ001",  # Allow null=True without blank=True
+    "DJ008",  # Allow model fields without verbose_name
+]
+
+# Allow Ruff to auto-fix everything safe
+fixable = ["ALL"]
+unfixable = []
+
+# ----------------------------------------------------------------------------
+# Import sorting (isort replacement)
+# ----------------------------------------------------------------------------
+[tool.ruff.lint.isort]
+known-first-party = ["config", "apps"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+# ----------------------------------------------------------------------------
+# Per-file ignores (Django realities)
+# ----------------------------------------------------------------------------
+[tool.ruff.lint.per-file-ignores]
+# Auto-generated files
+"*/migrations/*.py" = ["ALL"]
+
+# Django settings often have intentional unused imports
+"config/**/*.py" = ["F401"]
+
+# ----------------------------------------------------------------------------
+# Formatter (optional replaces Black)
+# ----------------------------------------------------------------------------
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+

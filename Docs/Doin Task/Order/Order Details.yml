@@ -1,0 +1,26 @@
+info:
+  name: Order Details
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/order/1/?field_list=id, order_id, action,order_history"
+  headers:
+    - name: X-Device-ID
+      value: "{{deviceId}}"
+    - name: X-Browser-Fingerprint
+      value: "{{browserFingerPrint}}"
+  params:
+    - name: field_list
+      value: id, order_id, action,order_history
+      type: query
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

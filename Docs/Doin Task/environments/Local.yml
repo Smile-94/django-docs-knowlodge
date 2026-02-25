@@ -1,0 +1,10 @@
+name: Local
+variables:
+  - name: baseUrl
+    value: http://127.0.0.1:8000/api/v1
+  - secret: true
+    name: accessToken
+  - name: deviceId
+    value: 3a35f03d-6684-48a2-bb36-42496f002432
+  - name: browserFingerPrint
+    value: e8ee1223ffe0b34d420a9dd73edf505f7d1081ad0b20b68174cf3ad0bed44969

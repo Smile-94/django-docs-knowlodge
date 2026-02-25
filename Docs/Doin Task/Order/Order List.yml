@@ -1,0 +1,41 @@
+info:
+  name: Order List
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/order/?field_list=id, order_id, active_status, action&action=BUY"
+  headers:
+    - name: X-Device-ID
+      value: "{{deviceId}}"
+    - name: X-Browser-Fingerprint
+      value: "{{browserFingerPrint}}"
+  params:
+    - name: field_list
+      value: id, order_id, active_status, action
+      type: query
+    - name: active_status
+      value: inactive
+      type: query
+      disabled: true
+    - name: from_date
+      value: 2025-10-12
+      type: query
+      disabled: true
+    - name: to_date
+      value: 2025-10-12
+      type: query
+      disabled: true
+    - name: action
+      value: BUY
+      type: query
+  auth:
+    type: bearer
+    token: "{{accessToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

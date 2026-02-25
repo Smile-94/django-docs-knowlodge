@@ -1,0 +1,27 @@
+info:
+  name: Login View
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/user/login/"
+  headers:
+    - name: X-Device-ID
+      value: "{{deviceId}}"
+    - name: X-Browser-Fingerprint
+      value: "{{browserFingerPrint}}"
+  body:
+    type: json
+    data: |-
+      {
+        "username": "admin",
+        "password": "admin"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

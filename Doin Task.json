@@ -1,0 +1,410 @@
+{
+  "info": {
+    "name": "Doin Task",
+    "description": null,
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Broker",
+      "item": [
+        {
+          "name": "Create Broker Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{deviceId}}",
+                "disabled": false,
+                "type": "default"
+              },
+              {
+                "key": "X-Browser-Fingerprint",
+                "value": "{{browserFingerPrint}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+              }
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/broker/accounts/",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "broker",
+                "accounts",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_name\": \"broker1\",\n  \"account_id\": \"BRK21102223\",\n  \"api_key\": \"adjfjsdlkfjlkasdjfljsdlfdkfsdkjfksdj12345@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order",
+      "item": [
+        {
+          "name": "Order Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{deviceId}}",
+                "disabled": false,
+                "type": "default"
+              },
+              {
+                "key": "X-Browser-Fingerprint",
+                "value": "{{browserFingerPrint}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+              }
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/order/1/?field_list=id, order_id, action,order_history",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order",
+                "1",
+                "?field_list=id, order_id, action,order_history"
+              ],
+              "query": [
+                {
+                  "key": "field_list",
+                  "value": "id, order_id, action,order_history"
+                }
+              ],
+              "variable": []
+            }
+          }
+        },
+        {
+          "name": "Order List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{deviceId}}",
+                "disabled": false,
+                "type": "default"
+              },
+              {
+                "key": "X-Browser-Fingerprint",
+                "value": "{{browserFingerPrint}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": {
+                "key": "token",
+                "value": "{{accessToken}}",
+                "type": "string"
+              }
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/order/?field_list=id, order_id, active_status, action&action=BUY",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order",
+                "?field_list=id, order_id, active_status, action&action=BUY"
+              ],
+              "query": [
+                {
+                  "key": "field_list",
+                  "value": "id, order_id, active_status, action"
+                },
+                {
+                  "key": "active_status",
+                  "value": "inactive"
+                },
+                {
+                  "key": "from_date",
+                  "value": "2025-10-12"
+                },
+                {
+                  "key": "to_date",
+                  "value": "2025-10-12"
+                },
+                {
+                  "key": "action",
+                  "value": "BUY"
+                }
+              ],
+              "variable": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Login View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{deviceId}}",
+                "disabled": false,
+                "type": "default"
+              },
+              {
+                "key": "X-Browser-Fingerprint",
+                "value": "{{browserFingerPrint}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/user/login/",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "login",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh Token View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Device-ID",
+                "value": "{{deviceId}}",
+                "disabled": false,
+                "type": "default"
+              },
+              {
+                "key": "X-Browser-Fingerprint",
+                "value": "{{browserFingerPrint}}",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/user/refresh/",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "refresh",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"YO2HnRFoGxVOR6ewNcl4h9n7378ggOfPqLKp5Nhm-qC-291OEYPBtR7Iu8AkBblUBNXNaNfpAtSQAXIS5kwCgA.99c65d3807192b0f4392b4de4e03adfc5acc6bb36e2e469052b82899470ea468\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "User Registration",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/user/register/",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "user",
+                "register",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n      \"username\": \"admin3\",\n      \"password\": \"Admin@1\",\n      \"confirm_password\": \"Admin@1\",\n      \"email\": \"mshossen72@gmail.com\",\n      \"phone\": \"+8801981701811\"\n    }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Web Hook",
+      "item": [
+        {
+          "name": "Received Signal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-KEY",
+                "value": "adjfjsdlkfjlkasdjfljsdlfdkfsdkjfksdj12345@",
+                "disabled": false,
+                "type": "default"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl}}/broker/webhook/receive-signal/",
+              "protocol": "",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "broker",
+                "webhook",
+                "receive-signal",
+                ""
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "BUY EURUSD [@1.0860 - Optional]\n\nSL 1.0850\nTP 1.0890\n",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "",
+            "url": {
+              "raw": "{{baseUrl",
+              "protocol": "",
+              "host": [
+                "{{baseUrl"
+              ],
+              "path": [],
+              "query": [],
+              "variable": []
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "deviceId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "browserFingerPrint",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}
