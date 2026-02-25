@@ -381,17 +381,57 @@ These are the most common tools used with annotate(). They perform mathematical 
     for author in authors:
         print(f"{author.name} wrote {author.total_books} books, averaging ${author.average_price}.")
     ```
-**`F()` Objects (Field References)**
+- **`F()` Objects (Field References)**
 An `F()` object represents the value of a specific column in the database. It allows you to perform operations directly in the database without ever pulling the data into Python's memory.
 
-You use `F()` objects inside `annotate()` to do math between columns in the same row, or to compare two columns against each other.
+    You use `F()` objects inside `annotate()` to do math between columns in the same row, or to compare two columns against each other.
 
     ```python
+    from django.db.models import F
+
     # 1. Math between two columns
     # Calculate inventory value for each product (price * quantity)
     Product.objects.annotate(total_value=F('price') * F('stock_quantity'))
 
     # 2. String manipulation
     # Combine first and last name (requires Concat, but uses F to grab the fields)
+    from django.db.models.functions import Concat
+    from django.db.models import Value
     User.objects.annotate(full_name=Concat(F('first_name'), Value(' '), F('last_name')))
     ```
+- **Q() Objects inside Annotations (Conditional Aggregation)**
+We talked about `Q` objects being used for OR logic in filter(). But when combined with `annotate()`, `Q` objects unlock conditional aggregation.
+
+    Every aggregate function `(Count, Sum, etc.)` accepts a filter argument where you can pass a `Q` object. This allows you to count or sum only specific things.
+
+    ```python
+    from django.db.models import Q, Count
+
+    # Annotate each author with their TOTAL books, but ALSO
+    # annotate them with only their HIGHLY RATED books.
+    authors = Author.objects.annotate(
+        total_books=Count('book'),
+        highly_rated_books=Count('book', filter=Q(book__rating__gte=4.5))
+    )
+    ```
+
+- **`Case()` and `When()` (If/Else Logic in the Database)**
+Sometimes you need to annotate a field based on complex If/Then/Else logic. Django provides `Case` and `When` for this, which translates directly to the SQL CASE WHEN ... THEN statement.
+
+    ```python
+    from django.db.models import Case, When, Value, CharField
+
+    # Annotate each user with a "status_label" based on their data
+    users = User.objects.annotate(
+        status_label=Case(
+            When(is_superuser=True, then=Value('Admin')),
+            When(is_active=False, then=Value('Suspended')),
+            default=Value('Regular User'),
+            output_field=CharField(),
+        )
+    )
+
+    for user in users:
+        print(f"{user.username} is a {user.status_label}")
+    ```
+
