@@ -201,7 +201,6 @@ If you want to exclude anyone named Alice, and also exclude anyone who is staff,
     Pro-Tip: A chained `exclude(A).exclude(B)` is logically the exact same as writing a filter with `Q` objects and the `~`(NOT) operator: `filter(~Q(A) & ~Q(B))`.
 
 - **Combining `filter()` and `exclude()`**
-
 Because QuerySets are lazy and chainable, the most powerful way to build queries is by mixing filter() and exclude() to narrow down your data step-by-step. Django will combine them all into one highly efficient SQL query.
 
     ```python
