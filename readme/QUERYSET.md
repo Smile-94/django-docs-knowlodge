@@ -376,7 +376,7 @@ These are the most common tools used with annotate(). They perform mathematical 
         total_pages=Sum('book__pages'),            # Sum of all pages across all their books
         average_price=Avg('book__price'),          # Average cost of their books
         newest_book_date=Max('book__publish_date') # The date of their most recent book
-    )
+        )
 
     for author in authors:
         print(f"{author.name} wrote {author.total_books} books, averaging ${author.average_price}.")
@@ -387,15 +387,11 @@ An `F()` object represents the value of a specific column in the database. It al
 You use `F()` objects inside `annotate()` to do math between columns in the same row, or to compare two columns against each other.
 
     ```python
-    from django.db.models import F
-
     # 1. Math between two columns
     # Calculate inventory value for each product (price * quantity)
     Product.objects.annotate(total_value=F('price') * F('stock_quantity'))
 
     # 2. String manipulation
     # Combine first and last name (requires Concat, but uses F to grab the fields)
-    from django.db.models.functions import Concat
-    from django.db.models import Value
     User.objects.annotate(full_name=Concat(F('first_name'), Value(' '), F('last_name')))
     ```
