@@ -690,3 +690,236 @@ This is the most common mistake developers make, and it completely ruins the opt
         # author.book_set.all()     - empty or triggers new query
         # author.cached_books       - contains prefetched data
         ```
+
+### Deffer `defer()`:
+The `defer()` method in Django’s QuerySet API is used to delay the loading of certain fields from the database. Instead of fetching all columns when the query is executed, `defer()` tells Django to not retrieve the specified fields initially, and only load them when they are actually accessed. This can improve performance when you have large text fields or columns you don't need immediately.
+
+- **Purpose**
+    - **Optimize performance:** Skip loading large or unnecessary fields (like TextField, BinaryField, or heavy JSON data) to reduce database transfer time and memory usage.
+
+    - **Lazy loading:** Fields are fetched only when accessed, spreading the database load over time.
+
+    - **Work with complex models:** When a model has many fields but you only need a few for a specific operation, `defer()` helps avoid fetching data you won't use.
+
+    **Complement to `only()`:** While `only()` specifies exactly which fields to load (loading only those), `defer()` specifies which fields NOT to load initially (loading everything else).
+
+**How It Works**
+When you call `defer()` on a QuerySet, Django modifies the SQL `SELECT` clause to exclude the specified fields. The deferred fields are not retrieved in the initial query. When you later access a deferred field, Django executes an additional query to fetch only that field for the specific object.
+
+```python
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    summary = models.TextField()  # Large text field
+    price = models.DecimalField(max_digits=5, decimal_places=2)
+    isbn = models.CharField(max_length=13)
+
+# Defer the large summary field
+books = Book.objects.defer('summary').all()
+
+for book in books:
+    # This does NOT trigger an additional query
+    print(book.title, book.price)
+    
+    # When you access the deferred field, Django fetches it now
+    print(book.summary)  # Triggers a separate query for this book only!
+```
+
+- **The Core Concept:** 
+Delaying Heavy Columns. When you pass field names to defer(), you are telling Django: "Fetch these rows, but leave these specific columns behind in the database for now.
+
+    ```python
+    # Django translates this to: SELECT id, title, author_id, publish_date FROM article;
+    # Notice that the heavy 'content' column is completely excluded!
+    articles = Article.objects.defer('content')
+
+    for article in articles:
+        print(article.title) # Fast and memory-efficient!
+    ```
+- **How it Works:** Lazy Loading
+
+    The magic of `defer()` is that it still returns fully functional Django Model instances. You aren't stripped of your data like you are with `values()` or `values_list()`.
+
+    If you decide you actually do need that deferred data later on, Django will seamlessly go back to the database and get it for you.
+
+    ```python
+    articles = Article.objects.defer('content')
+    first_article = articles.first()
+
+    # Django realizes 'content' was deferred.
+    # It automatically pauses, runs a NEW SQL query just for this article's content, 
+    # and hands it to you.
+    print(first_article.content)
+    ```
+- **The Danger:** Accidental N+1 Queries
+
+    Because Django lazily fetches deferred fields when you ask for them, `defer()` can actually cause the exact N+1 query problem that `select_related()` tries to solve!
+
+    If you defer a field, but then accidentally access that field inside a loop, Django will hit the database on every single iteration.
+
+    ```python
+    articles = Article.objects.defer('content')
+
+    for article in articles:
+        # ❌ BAD: This triggers a brand new SQL query for EVERY article in the loop!
+        # If you have 100 articles, you just ran 101 queries.
+        snippet = article.content[:50]
+    ```
+    **The Golden Rule:** Only `defer()` fields if you are absolutely, 100% certain you will not access them while looping through that specific QuerySet.
+
+- **`defer()` vs `values()`**
+Since both methods restrict which columns are fetched, how do you choose?
+
+    - Use `values()` when you just need raw data (dictionaries) and do not need to call any model methods (like `article.save()` or article.`get_absolute_url()`).
+
+    - Use `defer()` when you need actual Model objects so you can use their methods, but you want to save memory by skipping a few massive text or binary fields.
+
+- **Clearing Deferred Fields**
+If you are chaining multiple methods together and suddenly realize you don't want to defer fields anymore, you can clear the deferral by passing None.
+
+    ```python
+    # The content field is deferred
+    queryset = Article.objects.defer('content')
+
+    # Wait, nevermind, bring everything back to a normal SELECT *
+    queryset = queryset.defer(None)
+    ```
+
+### Only `only()`:
+The `only()` method is a powerful optimization tool in Django's QuerySet API that allows you to load only the specific fields you need from the database, deferring all other fields. Think of it as telling Django: "I only want these fields right now, don't bother fetching anything else." This is the opposite of `defer()`, which says "load everything except these fields.
+
+When you use `only()`, Django modifies the SQL query to include only the specified fields in the `SELECT` clause. The primary key (usually 'id') is always included automatically, even if you don't explicitly ask for it, because Django needs it to identify the object. All other fields become "deferred" – they exist as attributes on the model instance, but their values aren't loaded yet. If you try to access a deferred field, Django will immediately execute an additional query to fetch that specific field for that specific object.
+
+The primary purpose of `only()` is performance optimization. By fetching only the data you actually need, you reduce the amount of data transferred from your database to your application, lower memory usage, and can significantly speed up your queries. This is especially valuable when you have models with many fields, large text fields, or when you're working with large querysets. For example, if you have a Book model with 20 fields but you only need the title and price for a listing page, using `only('title', 'price')` would be much more efficient than loading all 20 fields.
+
+
+### Select For Update `select_for_update()`:
+The `select_for_update()` method is a database-level locking mechanism in Django's QuerySet API that allows you to lock selected rows for the duration of a transaction, preventing other transactions from modifying or acquiring locks on those rows until your transaction completes. This is essential for handling concurrent data access scenarios where multiple users or processes might try to update the same data simultaneously
+
+- **Purpose:**
+    - **Prevent race conditions:** Ensure that when multiple transactions try to update the same data concurrently, they don't interfere with each other
+
+    - **Implement pessimistic locking**: Lock database rows explicitly to maintain data consistency
+
+    - **Avoid lost updates:** Prevent situations where two transactions read the same value, then both update it, causing one update to be lost
+
+    - **Handle financial transactions:** Critical for operations like banking, inventory management, or any scenario where data integrity is paramount
+
+- **When to Use `select_for_update()`:**
+
+    - You have multiple concurrent processes updating the same rows
+    - You need to read a value, make calculations based on it, and then update it (read-modify-write operations)
+    - You're implementing queuing systems where multiple workers might claim the same job
+    - You're processing financial transactions where double-spending must be prevented
+    - You have complex business logic that must execute atomically on specific rows
+
+- **How It Works:**
+When you call `select_for_update()` on a QuerySet within a transaction, Django appends FOR UPDATE to the SQL query. This tells the database to lock the selected rows, making them inaccessible for modification by other transactions until your transaction ends .
+
+    ```python
+    from django.db import transaction
+
+    with transaction.atomic():
+        # This row will be locked until the transaction completes
+        book = Book.objects.select_for_update().get(id=1)
+        
+        # Perform operations based on the current value
+        book.price = book.price * 1.1  # Increase by 10%
+        book.save()
+        
+        # The lock is released when the transaction block ends
+    ```
+    - **What Happens Behind the Scenes:**
+        - **Lock acquisition:** When you execute the query, the database acquires a lock on the selected rows
+        - **Blocking other transactions:** Any other transaction trying to `SELECT` FOR `UPDATE`, `UPDATE`, or `DELETE` these rows will be blocked until your transaction ends
+        - **Lock release:** Locks are automatically released when your transaction commits or rolls back
+
+- **Critical Requirement:** Must Be Used Inside a Transaction.
+
+    The most important rule of select_for_update() is that it must be used within an atomic transaction. If you try to use it outside a transaction, Django raises TransactionManagementError
+
+    ```python
+    # WRONG - This will raise TransactionManagementError!
+    books = Book.objects.select_for_update().filter(author_id=1)
+    for book in books:  # Evaluation happens here, outside transaction
+        book.price += 5
+        book.save()
+
+    # CORRECT - Inside atomic transaction
+    with transaction.atomic():
+        books = Book.objects.select_for_update().filter(author_id=1)
+        for book in books:  # Evaluation inside transaction
+            book.price += 5
+            book.save()
+    ```
+    Why Lazy Evaluation Matters. QuerySets are lazy - they don't hit the database until evaluated. This means you can build the queryset outside the transaction, as long as the actual evaluation happens inside.
+
+    ```python
+    # This is perfectly fine - queryset is built but not evaluated
+    books_to_lock = Book.objects.select_for_update().filter(author_id=1)
+
+    with transaction.atomic():
+        # Evaluation happens here, inside transaction
+        for book in books_to_lock:
+            book.price += 5
+            book.save()
+    ```
+- **Important Parameters** 
+    - `nowait=True`
+
+        By default, if another transaction already holds a lock on a row, your transaction will wait indefinitely for that lock to be released. With `nowait=True`, Django adds `NOWAIT` to the query, causing it to raise an exception immediately if the row is already locked.
+
+        ```python
+        from django.db import OperationalError, transaction
+
+        with transaction.atomic():
+            try:
+                book = Book.objects.select_for_update(nowait=True).get(id=1)
+                # Process the book
+            except OperationalError:
+                # Handle the "could not obtain lock" situation
+                print("Book is currently being updated by another process")
+        ```
+    - **skip_locked=True**
+    With `skip_locked=True`, Django adds SKIP LOCKED to the query, which simply skips any rows that are already locked and returns only the unlocked rows 
+
+        ```python
+        with transaction.atomic():
+        # Get all unlocked books by this author, skip locked ones
+        books = Book.objects.select_for_update(skip_locked=True).filter(author_id=1)
+        
+        for book in books:
+            book.price += 5
+            book.save()
+        # Locked books are simply ignored
+        ```
+    - **of=(...) - Selective Table Locking**
+    When your query involves joins (via `select_related()`), `select_for_update()` by default locks all tables involved in the query. The of parameter allows you to specify exactly which tables/models to lock
+
+        ```python
+        # Lock only the Book rows, not the related Author rows
+        books = Book.objects.select_related('author').select_for_update(
+            of=('self',)  # Lock only the main model
+        ).filter(author_id=1)
+
+        # Lock both Book and Author
+        books = Book.objects.select_related('author').select_for_update(
+            of=('self', 'author')
+        ).filter(author_id=1)
+        ```
+- **Combining with `select_related()`**
+A common pattern is using `select_for_update()` with `select_related()` to both lock rows and prefetch related data in a single query .
+
+    ```python
+    with transaction.atomic():
+    # Get order with its product, lock both
+    order = Order.objects.select_related('product').select_for_update().get(id=1)
+    
+    # Access related without extra query
+    if order.product.stock >= order.quantity:
+        order.product.stock -= order.quantity
+        order.product.save()
+        order.status = 'processed'
+        order.save()
+    ```
+
+- **The "OF" Problem and Solution**
