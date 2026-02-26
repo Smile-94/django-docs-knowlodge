@@ -565,4 +565,128 @@ You can call `select_related()` completely empty, without passing any field name
 
     - **Nested `select_related()` and null relations:** If a foreign key is `null`, the join will use `LEFT OUTER JOIN`, and accessing the related attribute will return `None`. This is fine, but be aware of it.
 
-    
+### Prefetch Related `prefetch_related()`:
+The `prefetch_related()` method in Django's QuerySet API is an optimization tool designed for multi-valued relationships (such as ManyToManyField and reverse foreign keys). Unlike `select_related()` which uses SQL joins, `prefetch_related()` performs separate queries and combines the results in Python memory, making it the standard solution for the "N+1 query problem" that select_related() cannot handle effectively.
+
+- **Purpose**
+    - Eliminate the N+1 query problem: Without `prefetch_related()`, accessing related objects on each instance of a queryset (especially for reverse relations) triggers an additional database query per instance. `prefetch_related()` fetches all related data in separate queries and caches it, eliminating these extra hits.
+
+    - **Handle multi-valued relationships:** It works with relationships that return multiple objects per parent, such as:
+
+        - Reverse foreign keys (`author.book_set.all()`)
+        - Many-to-many fields (`book.authors.all()`)
+        - Generic relations
+
+    - **Complement select_related():** While `select_related()` handles forward foreign keys and `one-to-one` via joins, `prefetch_related()` handles everything else via separate queries plus Python joining.
+
+- **How It Works: The "Python Stitch"**
+Unlike `select_related()`, which creates one massive SQL JOIN query, `prefetch_related()` actually runs multiple, separate SQL queries. It runs one query for your main objects, gathers up all their IDs, and then runs a second query to fetch all the related objects that match those IDs. Finally, Django takes those two sets of data and "stitches" them together in Python's memory.
+
+    ```python
+    # Django runs QUERY 1: SELECT * FROM author;
+    # Django runs QUERY 2: SELECT * FROM book WHERE author_id IN (1, 2, 3...);
+    # Then, it matches them up in Python.
+    authors = Author.objects.prefetch_related('book_set').all()
+
+    for author in authors:
+        # No extra database hits here! The books are already in memory.
+        for book in author.book_set.all():
+            print(f"{author.name} wrote {book.title}")
+    ```
+
+- **When to Use It:**
+You must use `prefetch_related()` anytime you are dealing with a relationship where one object can have multiple related objects:
+    - **Reverse ForeignKey:** (e.g., Fetching an Author and all their Books).
+    - **ManyToManyField:** (e.g., Fetching a Book and all its Tags).
+    - **GenericForeignKeys:** (Advanced Django relationships).
+
+    **Note:** You actually can use prefetch_related on single relationships too, but select_related is almost always faster because doing it in one SQL query is usually more efficient than two.
+
+- **The Superpower: The Prefetch Object**
+Sometimes, you don't want to prefetch everything. What if you want to fetch all Authors, but only prefetch their published books (ignoring drafts)? If you just do `prefetch_related('book_set')`, it grabs all of them. To customize the second query, you use Django's Prefetch object.
+
+    ```python
+    from django.db.models import Prefetch
+
+    # Create a custom QuerySet for the related objects
+    published_books_only = Book.objects.filter(is_published=True).order_by('-publish_date')
+
+    # Pass it into the Prefetch object
+    authors = Author.objects.prefetch_related(
+        Prefetch('book_set', queryset=published_books_only)
+    )
+
+    for author in authors:
+        # This now ONLY iterates over the published books, already sorted!
+        for book in author.book_set.all():
+            print(book.title)
+    ```
+
+- **The BIG Gotcha: Breaking the Prefetch:**
+This is the most common mistake developers make, and it completely ruins the optimization, silently bringing the N+1 problem back. Once you have prefetched the related data, it lives in Python's memory. If you try to filter, order, or modify that data inside your loop, Django says: "Uh oh, the data in memory doesn't match this new rule. I better go ask the database.
+
+    ```python
+    authors = Author.objects.prefetch_related('book_set').all()
+
+    for author in authors:
+        # ❌ BAD: Adding .filter() here breaks the prefetch! 
+        # Django will run a brand new SQL query for EVERY author. (N+1 is back!)
+        published = author.book_set.filter(is_published=True) 
+        
+        # ✅ GOOD: If you need to filter, use the Prefetch object (shown in step 3) 
+        # so the data is filtered BEFORE it gets to the loop.
+    ```
+    **The Rule:** Once data is prefetched, you must only call `.all()` on the related manager inside your loops.
+
+- **Performance Considerations**
+    - **Number of queries:** Each prefetched relation adds one additional query (plus one for the main query). With 3 prefetched relations, you'll have 4 total queries.
+
+    - **Data size:** Prefetching can load a lot of data into memory. Be careful with large datasets.
+
+    - **Indexes:** Ensure foreign key columns are indexed for the prefetch queries (the WHERE author_id IN (...) part).
+
+    - **When to avoid:** If you only need related data for a few parent objects, prefetching might be overkill. Consider using `annotate()` with Subquery for calculated values instead.
+
+    - **Chaining prefetch:** Deep nesting increases the number of queries. Each level adds a query.
+
+- **Common Pitfalls**
+    - **Pitfall 1:** Filtering after prefetch (breaks caching)
+        ```python
+        authors = Author.objects.prefetch_related('book_set')
+        for author in authors:
+            # WRONG: This filter() hits the database again!
+            recent_books = author.book_set.filter(publication_date__year=2023)
+        ```
+        **Solution:** Filter in the prefetch queryset using Prefetch:
+        ```python
+        recent_books = Book.objects.filter(publication_date__year=2023)
+        authors = Author.objects.prefetch_related(
+            Prefetch('book_set', queryset=recent_books, to_attr='recent_books')
+        )
+        ```
+    - **Pitfall 2:** Forgetting that all() uses the cache, but other methods may not
+        ```python
+        author.book_set.all()                 # Uses cache ✓
+        author.book_set.filter(title='X')     # Does NOT use cache - new query! ✗
+        author.book_set.count()               # Does NOT use cache - new query! ✗
+        ```
+    - **Pitfall 3:** Using prefetch_related() on forward relations unnecessarily
+
+        ```python
+        # Inefficient - should use select_related() for forward FK
+        Book.objects.prefetch_related('author').all()  # 2 queries
+        Book.objects.select_related('author').all()    # 1 query - better!
+        ```
+    - **Pitfall 4:** Over-prefetching.
+    Prefetching relations you never access wastes database and memory resources.
+
+    - **Pitfall 5:** Using to_attr and still accessing the original manager.
+    If you store results in to_attr, the original manager still exists but is empty:
+
+        ```python
+        authors = Author.objects.prefetch_related(
+        Prefetch('book_set', queryset=Book.objects.all(), to_attr='cached_books')
+        )
+        # author.book_set.all()     - empty or triggers new query
+        # author.cached_books       - contains prefetched data
+        ```
